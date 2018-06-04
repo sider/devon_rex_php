@@ -1,4 +1,4 @@
-FROM quay.io/actcat/devon_rex_base:1.0.7
+FROM quay.io/actcat/devon_rex_base:1.0.8
 
 ENV PHP_VERSION="7.1.9" \
     PATH="/root/.phpenv/shims:/root/.phpenv/bin:${PATH}:/root/.composer/vendor/bin" \
