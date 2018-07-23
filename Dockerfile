@@ -15,3 +15,5 @@ RUN phpenv install ${PHP_VERSION} && phpenv global ${PHP_VERSION}
 RUN apt-get install -y php-pear
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+COPY sider.ini /root/.phpenv/versions/${PHP_VERSION}/etc/conf.d/sider.ini
