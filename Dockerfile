@@ -1,19 +1,39 @@
-FROM quay.io/actcat/devon_rex_base:1.2.1
+FROM quay.io/actcat/devon_rex_base:1.3.1
 
-ENV PHP_VERSION="7.3.0" \
-    PATH="/root/.phpenv/shims:/root/.phpenv/bin:${PATH}:/root/.composer/vendor/bin" \
-    COMPOSER_ALLOW_SUPERUSER=1
+ARG PHP_VERSION="7.3.0"
+# NOTE: To ignore .php-version in every project, we must set `RBENV_VERSION`.
+#       Why rbenv? Because CHH/phpenv depends on rbenv.
+#
+#       If devon_rex_base uses rbenv, each runner based on this image must delete
+#       .php-version before performing analysis.
+ENV RBENV_VERSION="$PHP_VERSION"
+ENV PHPENV_SHIMS_BIN="$RUNNER_USER_HOME/.phpenv/shims"
+ENV PHPENV_BIN="$RUNNER_USER_HOME/.phpenv/bin"
+ENV COMPOSER_HOME="$RUNNER_USER_HOME/.composer"
+ENV COMPOSER_VENDOR_BIN="$COMPOSER_HOME/vendor/bin"
+ENV PATH="$PHPENV_SHIMS_BIN:$PHPENV_BIN:$PATH:$COMPOSER_VENDOR_BIN"
 
-RUN apt-get update && apt-get install -y libtidy-dev libzip-dev
 
+# Install pear as root (and installs lib packages for building PHP)
+RUN apt-get update \
+    && apt-get install -y php-pear libtidy-dev libzip-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install phpenv as a general user
+USER $RUNNER_USER
 RUN curl https://raw.githubusercontent.com/CHH/phpenv/f347f96d0722c38033ff4a886c67de9d72634e6e/bin/phpenv-install.sh | bash \
     && git clone https://github.com/php-build/php-build.git ~/.phpenv/plugins/php-build \
-    && cd ~/.phpenv/plugins/php-build && git checkout 62dc4932ca83f9143ba73ce6fc6c69a929384482
+    && cd ~/.phpenv/plugins/php-build && git checkout 62dc4932ca83f9143ba73ce6fc6c69a929384482 \
+    && phpenv install ${PHP_VERSION} \
+    && phpenv global ${PHP_VERSION}
+COPY sider.ini $RUNNER_USER_HOME/.phpenv/versions/${PHP_VERSION}/etc/conf.d/sider.ini
 
-RUN phpenv install ${PHP_VERSION} && phpenv global ${PHP_VERSION}
-
-RUN apt-get install -y php-pear
-
+# Install composer as root
+USER root
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-COPY sider.ini /root/.phpenv/versions/${PHP_VERSION}/etc/conf.d/sider.ini
+# Edit secure_path to include PATH required by PHP
+USER root
+RUN sed -i -e '/secure_path/d' /etc/sudoers && \
+    echo "Defaults secure_path=\"$GEM_HOME/bin:$PHPENV_SHIMS_BIN:$PHPENV_BIN:/usr/local/bin:/usr/bin:/bin:$COMPOSER_VENDOR_BIN\"" >> /etc/sudoers && \
+    echo 'Defaults env_keep += "RBENV_VERSION"' >> /etc/sudoers
