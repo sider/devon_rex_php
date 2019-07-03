@@ -1,6 +1,6 @@
 FROM quay.io/actcat/devon_rex_base:1.3.1
 
-ARG PHP_VERSION="7.3.0"
+ARG PHP_VERSION="7.3.6"
 # NOTE: To ignore .php-version in every project, we must set `RBENV_VERSION`.
 #       Why rbenv? Because CHH/phpenv depends on rbenv.
 #
@@ -23,7 +23,7 @@ RUN apt-get update \
 USER $RUNNER_USER
 RUN curl https://raw.githubusercontent.com/CHH/phpenv/f347f96d0722c38033ff4a886c67de9d72634e6e/bin/phpenv-install.sh | bash \
     && git clone https://github.com/php-build/php-build.git ~/.phpenv/plugins/php-build \
-    && cd ~/.phpenv/plugins/php-build && git checkout 62dc4932ca83f9143ba73ce6fc6c69a929384482 \
+    && cd ~/.phpenv/plugins/php-build && git checkout d1766006e0df4651a98cf8acd5684ad39088c349 \
     && phpenv install ${PHP_VERSION} \
     && phpenv global ${PHP_VERSION}
 COPY sider.ini $RUNNER_USER_HOME/.phpenv/versions/${PHP_VERSION}/etc/conf.d/sider.ini
